@@ -24,6 +24,6 @@
     <key>uploadBits</key>
     <true/>
     <key>iconAssetPath</key>
-    <string>ClockOnTemp/Images.xcassets</string>
+    <string>ClockOn/Images.xcassets</string>
 </dict>
 </plist>
