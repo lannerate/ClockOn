@@ -22,13 +22,6 @@
       android:usesCleartextTraffic="${usesCleartextTraffic}"
       android:supportsRtl="true">
 
-      <!-- Foreground service for background location -->
-      <service
-        android:name="com.maubis.scarlet.base.ScarletBackgroundService"
-        android:enabled="true"
-        android:exported="false"
-        android:foregroundServiceType="location" />
-
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"

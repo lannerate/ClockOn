@@ -77,9 +77,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.clockontemp"
+    namespace "com.ClockOn"
     defaultConfig {
-        applicationId "com.clockontemp"
+        applicationId "com.ClockOn"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

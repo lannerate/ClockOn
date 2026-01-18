@@ -19,6 +19,7 @@ import {
   List,
   ProgressBar,
 } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
 import { format } from 'date-fns';
 import SettingsService from '../services/SettingsService';
 import MonthlyStatsService from '../services/MonthlyStatsService';
@@ -35,6 +36,13 @@ const MonthlyStatsScreen: React.FC = () => {
   useEffect(() => {
     loadMonthlyStats();
   }, []);
+
+  // Refresh stats when screen comes into focus (e.g., after deleting records from dashboard)
+  useFocusEffect(
+    React.useCallback(() => {
+      loadMonthlyStats();
+    }, [])
+  );
 
   const loadMonthlyStats = async () => {
     try {
@@ -97,7 +105,7 @@ const MonthlyStatsScreen: React.FC = () => {
       <Card style={styles.card}>
         <Card.Title
           title="Select Month"
-          left={(props) => <List.Icon {...props} icon="calendar-multiple" size={24} />}
+          left={() => <Text style={{ fontSize: 24 }}>📆</Text>}
         />
         <Card.Content>
           <ScrollView
@@ -116,7 +124,6 @@ const MonthlyStatsScreen: React.FC = () => {
                 }
                 onPress={() => setSelectedMonth(stats)}
                 style={styles.monthButton}
-                icon="calendar-month"
               >
                 {monthNames[stats.month - 1].substring(0, 3)}
               </Button>
@@ -148,7 +155,7 @@ const MonthlyStatsScreen: React.FC = () => {
         <Card.Title
           title={formatMonthYear(selectedMonth.year, selectedMonth.month)}
           subtitle="Monthly Attendance Summary"
-          left={(props) => <List.Icon {...props} icon="chart-bar" size={24} />}
+          left={() => <Text style={{ fontSize: 24 }}>📊</Text>}
         />
         <Card.Content>
           {/* Attendance Rate */}
@@ -159,7 +166,7 @@ const MonthlyStatsScreen: React.FC = () => {
               </Text>
               <Text
                 variant="headlineLarge"
-                style={[styles.statValue, { color: attendanceColor, fontSize: 48 }]}
+                style={[styles.statValue, { color: attendanceColor, fontSize: 38 }]}
               >
                 {selectedMonth.attendanceRate.toFixed(1)}%
               </Text>
@@ -177,7 +184,7 @@ const MonthlyStatsScreen: React.FC = () => {
           <View style={styles.statsGrid}>
             <View style={styles.gridItem}>
               <Text variant="bodyMedium" style={styles.statLabel}>
-                ✅ Days Worked
+                Days Worked
               </Text>
               <Text variant="headlineSmall" style={styles.statValue}>
                 {selectedMonth.daysClockedIn}
@@ -186,7 +193,7 @@ const MonthlyStatsScreen: React.FC = () => {
 
             <View style={styles.gridItem}>
               <Text variant="bodyMedium" style={styles.statLabel}>
-                📆 Working Days
+                Working Days
               </Text>
               <Text variant="headlineSmall" style={styles.statValue}>
                 {selectedMonth.totalWorkingDays}
@@ -195,7 +202,7 @@ const MonthlyStatsScreen: React.FC = () => {
 
             <View style={styles.gridItem}>
               <Text variant="bodyMedium" style={styles.statLabel}>
-                ⏰ Total Hours
+                Total Hours
               </Text>
               <Text variant="headlineSmall" style={styles.statValue}>
                 {selectedMonth.totalHours.toFixed(1)}h
@@ -207,7 +214,7 @@ const MonthlyStatsScreen: React.FC = () => {
 
           {/* Daily Records */}
           <View style={styles.sectionHeader}>
-            <List.Icon icon="calendar-text" size={20} />
+            <Text style={{ fontSize: 20 }}>📋</Text>
             <Text variant="titleLarge" style={styles.sectionTitle}>
               Daily Records
             </Text>
@@ -221,20 +228,10 @@ const MonthlyStatsScreen: React.FC = () => {
                       record.clockType === 'IN' ? 'Clocked In' : 'Clocked Out'
                     }
                     description={format(new Date(record.timestamp), 'MMM dd, HH:mm:ss')}
-                    left={(props) => (
-                      <List.Icon
-                        {...props}
-                        icon={
-                          record.clockType === 'IN'
-                            ? 'login-variant'
-                            : 'logout-variant'
-                        }
-                        iconColor={
-                          record.clockType === 'IN'
-                            ? theme.colors.primary
-                            : theme.colors.error
-                        }
-                      />
+                    left={() => (
+                      <Text style={{ fontSize: 24, marginRight: 12 }}>
+                        {record.clockType === 'IN' ? '🟢' : '🔴'}
+                      </Text>
                     )}
                     right={(props) => (
                       <Text
@@ -283,7 +280,7 @@ const MonthlyStatsScreen: React.FC = () => {
         <Card style={styles.card}>
           <Card.Content style={styles.infoCard}>
             <View style={styles.infoHeader}>
-              <List.Icon icon="information-outline" size={24} />
+              <Text style={{ fontSize: 24 }}>ℹ️</Text>
               <Text variant="titleMedium" style={styles.infoTitle}>
                 About Attendance Rate
               </Text>

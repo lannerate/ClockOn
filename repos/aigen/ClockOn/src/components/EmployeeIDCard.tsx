@@ -46,9 +46,8 @@ export const EmployeeIDCard: React.FC<EmployeeIDCardProps> = ({
           contentStyle={styles.buttonContent}
           buttonColor={designTokens.colors.primary}
           textColor={designTokens.colors.text.inverse}
-          icon="check-circle"
         >
-          Save Employee ID
+          ✅ Save Employee ID
         </Button>
       </Card.Content>
     </Card>

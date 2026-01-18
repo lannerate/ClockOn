@@ -26,8 +26,8 @@ export const ClockButton: React.FC<ClockButtonProps> = ({
     ? designTokens.colors.success
     : designTokens.colors.error;
 
-  const icon = isClockIn ? 'login' : 'logout';
-  const label = isClockIn ? 'Clock In' : 'Clock Out';
+  const emoji = isClockIn ? '🟢' : '🔴';
+  const label = isClockIn ? 'IN' : 'OUT';
 
   return (
     <View style={[styles.container, style]}>
@@ -41,9 +41,8 @@ export const ClockButton: React.FC<ClockButtonProps> = ({
         style={styles.button}
         contentStyle={styles.buttonContent}
         labelStyle={styles.buttonLabel}
-        icon={icon}
       >
-        {label}
+        {emoji} {label}
       </Button>
     </View>
   );

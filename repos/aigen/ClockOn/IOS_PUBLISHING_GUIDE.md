@@ -169,15 +169,15 @@ You need screenshots for each device size:
 
 ```bash
 cd ios
-open ClockOnTemp.xcworkspace
+open ClockOn.xcworkspace
 ```
 
 **Important**: Always open the `.xcworkspace` file, NOT the `.xcodeproj`
 
 ### Step 2: Update Bundle Identifier
 
-1. Select **ClockOnTemp** project in left sidebar
-2. Select **ClockOnTemp** target
+1. Select **ClockOn** project in left sidebar
+2. Select **ClockOn** target
 3. Go to **General** tab
 4. Update **Bundle Identifier** to match your App ID:
    ```
@@ -250,8 +250,8 @@ npm run ios:clean
 npm run ios:pods
 
 # Build archive
-xcodebuild -workspace ios/ClockOnTemp.xcworkspace \
-  -scheme ClockOnTemp \
+xcodebuild -workspace ios/ClockOn.xcworkspace \
+  -scheme ClockOn \
   -configuration Release \
   -archivePath build/ClockOn.xcarchive \
   -destination 'generic/platform=iOS' \
@@ -629,8 +629,8 @@ npm run ios:devices
 npm run ios:release
 
 # Build archive (from project root)
-xcodebuild -workspace ios/ClockOnTemp.xcworkspace \
-  -scheme ClockOnTemp \
+xcodebuild -workspace ios/ClockOn.xcworkspace \
+  -scheme ClockOn \
   -configuration Release \
   -archivePath build/ClockOn.xcarchive \
   -destination 'generic/platform=iOS' \
@@ -642,11 +642,11 @@ xcodebuild -workspace ios/ClockOnTemp.xcworkspace \
 ```bash
 # Check bundle identifier
 /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" \
-  ios/ClockOnTemp/Info.plist
+  ios/ClockOn/Info.plist
 
 # Check version
 /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
-  ios/ClockOnTemp/Info.plist
+  ios/ClockOn/Info.plist
 
 # Verify provisioning profile
 security cms -D -i ios/profile/ClockOn.mobileprovision

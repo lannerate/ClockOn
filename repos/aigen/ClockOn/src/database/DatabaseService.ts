@@ -221,7 +221,7 @@ class DatabaseService {
         SELECT * FROM ${TABLE_EMPLOYEE_RECORDS}
         WHERE employeeId = ?
           AND strftime('%Y-%m', timestamp) = ?
-        ORDER BY timestamp ASC
+        ORDER BY timestamp DESC
       `;
 
       const result = this.executeSQL(sql, [employeeId, `${year}-${monthStr}`]);

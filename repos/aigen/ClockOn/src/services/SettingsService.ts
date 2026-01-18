@@ -1,11 +1,12 @@
 // Settings service using AsyncStorage for app configuration
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppSettings, OfficeLocation } from '../types';
+import { AppSettings, OfficeLocation, PowerMode } from '../types';
 
 const SETTINGS_KEY = '@ClockOn:settings';
 const EMPLOYEE_ID_KEY = '@ClockOn:employeeId';
 const OFFICE_LOCATIONS_KEY = '@ClockOn:officeLocations';
+const POWER_MODE_KEY = '@ClockOn:powerMode';
 
 const DEFAULT_SETTINGS: AppSettings = {
   employeeId: '',
@@ -13,14 +14,16 @@ const DEFAULT_SETTINGS: AppSettings = {
   debounceMinutes: 0.5, // 30 seconds
   dwellTimeSeconds: 30,
   maxAccuracyMeters: 50,
+  powerMode: 'balanced', // default to balanced for good battery/performance trade-off
 };
 
 class SettingsService {
   async getSettings(): Promise<AppSettings> {
     try {
-      const [employeeId, locationsJson] = await Promise.all([
+      const [employeeId, locationsJson, powerModeStr] = await Promise.all([
         AsyncStorage.getItem(EMPLOYEE_ID_KEY),
         AsyncStorage.getItem(OFFICE_LOCATIONS_KEY),
+        AsyncStorage.getItem(POWER_MODE_KEY),
       ]);
 
       return {
@@ -29,6 +32,7 @@ class SettingsService {
         debounceMinutes: DEFAULT_SETTINGS.debounceMinutes,
         dwellTimeSeconds: DEFAULT_SETTINGS.dwellTimeSeconds,
         maxAccuracyMeters: DEFAULT_SETTINGS.maxAccuracyMeters,
+        powerMode: (powerModeStr as PowerMode) || DEFAULT_SETTINGS.powerMode,
       };
     } catch (error) {
       console.error('Failed to get settings:', error);
@@ -112,10 +116,31 @@ class SettingsService {
       await Promise.all([
         AsyncStorage.removeItem(EMPLOYEE_ID_KEY),
         AsyncStorage.removeItem(OFFICE_LOCATIONS_KEY),
+        AsyncStorage.removeItem(POWER_MODE_KEY),
       ]);
       console.log('All settings cleared');
     } catch (error) {
       console.error('Failed to clear settings:', error);
+      throw error;
+    }
+  }
+
+  async getPowerMode(): Promise<PowerMode> {
+    try {
+      const powerModeStr = await AsyncStorage.getItem(POWER_MODE_KEY);
+      return (powerModeStr as PowerMode) || DEFAULT_SETTINGS.powerMode;
+    } catch (error) {
+      console.error('Failed to get power mode:', error);
+      return DEFAULT_SETTINGS.powerMode;
+    }
+  }
+
+  async setPowerMode(powerMode: PowerMode): Promise<void> {
+    try {
+      await AsyncStorage.setItem(POWER_MODE_KEY, powerMode);
+      console.log('Power mode saved:', powerMode);
+    } catch (error) {
+      console.error('Failed to save power mode:', error);
       throw error;
     }
   }

@@ -4,7 +4,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { PaperProvider } from 'react-native-paper';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Text } from 'react-native';
 
 // Screens
 import DashboardScreen from '../screens/DashboardScreen';
@@ -45,8 +45,8 @@ function Navigation() {
             options={{
               title: 'Dashboard',
               tabBarLabel: 'Dashboard',
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="clock-outline" size={size} color={color} />
+              tabBarIcon: ({ color }) => (
+                <Text style={{ fontSize: 24, color }}>⏰</Text>
               ),
             }}
           />
@@ -56,8 +56,8 @@ function Navigation() {
             options={{
               title: 'Monthly Stats',
               tabBarLabel: 'Statistics',
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="chart-line-variant" size={size} color={color} />
+              tabBarIcon: ({ color }) => (
+                <Text style={{ fontSize: 24, color }}>📊</Text>
               ),
             }}
           />
@@ -67,8 +67,8 @@ function Navigation() {
             options={{
               title: 'Settings',
               tabBarLabel: 'Settings',
-              tabBarIcon: ({ color, size }) => (
-                <Icon name="cog" size={size} color={color} />
+              tabBarIcon: ({ color }) => (
+                <Text style={{ fontSize: 24, color }}>⚙️</Text>
               ),
             }}
           />

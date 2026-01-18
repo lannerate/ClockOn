@@ -1,21 +1,50 @@
 // ActivityCard - Displays today's activity with improved visual design
 import React from 'react';
-import { View, StyleSheet, ScrollView, ViewStyle } from 'react-native';
+import { View, StyleSheet, ScrollView, ViewStyle, TouchableOpacity, Alert } from 'react-native';
 import { Card, Text, Divider, List, useTheme } from 'react-native-paper';
 import { format } from 'date-fns';
 import { EmployeeRecord } from '../types';
 import { designTokens } from '../theme/theme';
+import DatabaseService from '../database/DatabaseService';
 
 interface ActivityCardProps {
   records: EmployeeRecord[];
   style?: ViewStyle;
+  onRefresh?: () => void;
 }
 
-export const ActivityCard: React.FC<ActivityCardProps> = ({ records, style }) => {
+export const ActivityCard: React.FC<ActivityCardProps> = ({ records, style, onRefresh }) => {
   const theme = useTheme();
 
   const formatTime = (timestamp: string) => {
     return format(new Date(timestamp), 'HH:mm:ss');
+  };
+
+  const handleDeleteRecord = (record: EmployeeRecord) => {
+    Alert.alert(
+      'Delete Record',
+      `Are you sure you want to delete this ${record.clockType === 'IN' ? 'clock in' : 'clock out'} record?\n\nTime: ${formatTime(record.timestamp)}`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await DatabaseService.deleteRecord(record.id);
+              if (onRefresh) {
+                onRefresh();
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete record');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (records.length === 0) {
@@ -24,13 +53,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ records, style }) =>
         <Card.Title
           title="Today's Activity"
           titleVariant="titleLarge"
-          left={(props) => (
-            <List.Icon
-              {...props}
-              icon="calendar-check"
-              iconColor={designTokens.colors.primary}
-            />
-          )}
+          left={() => <Text style={{ fontSize: 24 }}>📅</Text>}
         />
         <Card.Content>
           <Text style={styles.emptyText}>
@@ -46,20 +69,12 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ records, style }) =>
       <Card.Title
         title="Today's Activity"
         titleVariant="titleLarge"
-        left={(props) => (
-          <List.Icon
-            {...props}
-            icon="calendar-check"
-            size={24}
-            iconColor={designTokens.colors.primary}
-          />
-        )}
+        left={() => <Text style={{ fontSize: 24 }}>📅</Text>}
       />
       <Card.Content>
         <ScrollView showsVerticalScrollIndicator={false}>
           {records.map((record, index) => {
             const isIn = record.clockType === 'IN';
-            const icon = isIn ? 'arrow-right-bold-circle' : 'arrow-left-bold-circle';
             const iconColor = isIn
               ? designTokens.colors.success
               : designTokens.colors.error;
@@ -72,25 +87,32 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({ records, style }) =>
                   titleStyle={styles.activityTitle}
                   description={formatTime(record.timestamp)}
                   descriptionStyle={styles.activityTime}
-                  left={(props) => (
+                  left={() => (
                     <View style={styles.iconContainer}>
-                      <List.Icon
-                        {...props}
-                        icon={icon}
-                        iconColor={iconColor}
-                      />
+                      <Text style={{ fontSize: 24, marginRight: 12 }}>
+                        {isIn ? '🟢' : '🔴'}
+                      </Text>
                     </View>
                   )}
-                  right={(props) => (
-                    <View style={styles.typeBadge}>
-                      <Text
-                        style={[
-                          styles.typeText,
-                          { color: iconColor }
-                        ]}
+                  right={() => (
+                    <View style={styles.rightContainer}>
+                      <View style={styles.typeBadge}>
+                        <Text
+                          style={[
+                            styles.typeText,
+                            { color: iconColor }
+                          ]}
+                        >
+                          {record.clockType}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => handleDeleteRecord(record)}
+                        style={styles.deleteButton}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       >
-                        {record.clockType}
-                      </Text>
+                        <Text style={styles.deleteIcon}>🗑️</Text>
+                      </TouchableOpacity>
                     </View>
                   )}
                   style={styles.listItem}
@@ -142,6 +164,18 @@ const styles = StyleSheet.create({
   typeText: {
     ...designTokens.typography.fontWeight.semibold,
     fontSize: designTokens.typography.fontSize.label.medium,
+  },
+  rightContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: designTokens.spacing.sm,
+  },
+  deleteButton: {
+    padding: designTokens.spacing.xs,
+  },
+  deleteIcon: {
+    fontSize: 20,
+    opacity: 0.6,
   },
   divider: {
     backgroundColor: designTokens.colors.divider,

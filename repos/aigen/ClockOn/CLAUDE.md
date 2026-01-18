@@ -18,6 +18,10 @@ bundle install
 bundle exec pod install
 ```
 
+### Testing
+- `npm test` - Run Jest tests
+- No test runner for individual tests configured (use standard Jest pattern: `npm test -- --testNamePattern="pattern"`)
+
 ### Building
 - Build directly from Android Studio or Xcode
 - Metro runs on port 8081 by default
@@ -45,6 +49,15 @@ ClockOn is a React Native attendance tracking app with automatic geofence-based 
 **Navigation** (`src/navigation/`)
 - React Navigation v7 with bottom tabs
 - Material Design 3 theme via `react-native-paper`
+
+**Components** (`src/components/`)
+- Reusable UI components: ActivityCard, ClockButton, EmployeeIDCard, LocationCard, OfficeLocationCard
+- Components use Material Design 3 patterns and react-native-paper
+
+**Screens** (`src/screens/`)
+- HomeScreen: Main clock in/out interface
+- MonthlyStatsScreen: Calendar view and statistics
+- SettingsScreen: App configuration
 
 ### Type System (`src/types/`)
 
@@ -99,14 +112,16 @@ Common queries:
 **Android:**
 - Requires `always` location permission for background geofencing
 - Manifest permissions in `android/app/src/main/AndroidManifest.xml`
+- MainActivity and MainApplication require Kotlin imports for geofencing modules
 
 **iOS:**
-- App name: "ClockOn" (renamed from "ClockOnTemp" Jan 2025)
+- App name: "ClockOn"
 - Requires `whenInUse` or `always` authorization
-- Background geofencing requires Info.plist configuration
-- CocoaPods dependencies managed via Podfile
+- Background geofencing requires Info.plist configuration (`NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`)
+- CocoaPods dependencies managed via Podfile - requires `bundle install` and `bundle exec pod install`
 - **Important:** When renaming iOS app, the `.xcscheme` file contains hardcoded references that must be updated separately from `project.pbxproj`
-- Bundle identifier remains `org.reactjs.native.example.ClockOnTemp` (contains legacy name)
+- Bundle identifier remains `org.reactjs.native.example.ClockOn` (contains legacy name)
+- Workspace: `ios/ClockOn.xcworkspace` (must use workspace, not project)
 
 ### Key Patterns
 
@@ -125,3 +140,18 @@ Returns unsubscribe function.
 - `isAccurateEnough()` - GPS accuracy threshold check
 - `isInGeofence()` - Haversine distance calculation
 - `generateUUID()` - Unique record IDs
+
+## Recent Changes
+
+**January 2025 - iOS Project Configuration:**
+- Updated iOS project configuration and workspace setup
+- Bundle identifier: `org.reactjs.native.example.ClockOn`
+- Workspace: `ClockOn.xcworkspace` (required for building)
+
+## Configuration Files
+
+**app.json:**
+- Expo/React Native app configuration
+- Display name: "ClockOn"
+- Bundle identifier: `org.reactjs.native.example.ClockOn`
+- Version: 1.0.0

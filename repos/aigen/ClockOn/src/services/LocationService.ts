@@ -2,9 +2,10 @@
 
 import { Platform, AppState, AppStateStatus } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
-import { Location, OfficeLocation, GeofenceEvent } from '../types';
+import { Location, OfficeLocation, GeofenceEvent, PowerMode } from '../types';
 import { isInGeofence as checkInGeofence, isAccurateEnough } from '../utils/location';
 import SettingsService from './SettingsService';
+import { getAdaptiveLocationConfig } from '../config/powerModeConfig';
 
 type LocationCallback = (location: Location) => void;
 type GeofenceCallback = (event: GeofenceEvent) => void;
@@ -19,6 +20,8 @@ class LocationService {
   private lastGeofenceState: Map<string, boolean> = new Map(); // Track per-office state
   private dwellTimers: Map<string, number> = new Map();
   private appState = AppState.currentState;
+  private currentPowerMode: PowerMode = 'balanced';
+  private offices: OfficeLocation[] = [];
 
   constructor() {
     this.setupAppStateListener();
@@ -42,13 +45,25 @@ class LocationService {
 
   /**
    * Request location permissions
+   * For iOS: requests 'always' authorization for reliable background geofencing
+   * For Android: requests 'always' (background location) authorization
    */
   async requestPermissions(): Promise<boolean> {
     try {
       if (Platform.OS === 'ios') {
-        const auth = await Geolocation.requestAuthorization('whenInUse');
-        return auth === 'granted';
+        // Request 'always' authorization for iOS to enable background location updates
+        const auth = await Geolocation.requestAuthorization('always');
+        if (auth === 'granted') {
+          console.log('iOS: Always location permission granted');
+          return true;
+        } else if (auth === 'whenInUse') {
+          console.warn('iOS: Only whenInUse permission granted. Background geofencing may not work reliably.');
+          // Fallback to whenInUse if always is denied
+          return true;
+        }
+        return false;
       } else {
+        // Android: Request 'always' permission (includes background location)
         const granted = await Geolocation.requestAuthorization('always');
         return granted === 'granted';
       }
@@ -103,7 +118,7 @@ class LocationService {
   }
 
   /**
-   * Start watching location
+   * Start watching location with adaptive power mode configuration
    */
   async startWatching(): Promise<void> {
     if (this.isWatching) {
@@ -111,9 +126,29 @@ class LocationService {
     }
 
     try {
+      // Load current settings
+      const settings = await SettingsService.getSettings();
+      this.currentPowerMode = settings.powerMode;
+      this.offices = settings.officeLocations;
+
+      // Get adaptive location configuration based on power mode and proximity
+      const config = getAdaptiveLocationConfig(
+        this.currentPowerMode,
+        this.currentLocation,
+        this.offices
+      );
+
+      console.log('Starting location watching with config:', {
+        powerMode: this.currentPowerMode,
+        distanceFilter: config.distanceFilter,
+        interval: config.interval,
+        accuracy: config.accuracy,
+        adaptive: config.adaptiveUpdates,
+      });
+
       this.isWatching = true;
 
-      // Foreground location watching
+      // Foreground location watching with adaptive configuration
       this.watchId = Geolocation.watchPosition(
         (position) => {
           const location: Location = {
@@ -130,15 +165,15 @@ class LocationService {
           this.notifyErrorListeners(this.getErrorMessage(error));
         },
         {
-          enableHighAccuracy: true,
-          distanceFilter: 10, // Update every 10 meters
-          interval: 5000, // Every 5 seconds
-          fastestInterval: 3000,
-          accuracy: { android: 'high', ios: 'best' },
+          enableHighAccuracy: config.accuracy.android === 'high' || config.accuracy.ios === 'best',
+          distanceFilter: config.distanceFilter,
+          interval: config.interval,
+          fastestInterval: config.fastestInterval,
+          accuracy: config.accuracy,
         }
       );
 
-      console.log('Location watching started');
+      console.log(`Location watching started (Power Mode: ${this.currentPowerMode})`);
     } catch (error) {
       console.error('Failed to start location watching:', error);
       this.isWatching = false;
@@ -157,10 +192,28 @@ class LocationService {
     console.log('Location watching stopped');
   }
 
+  /**
+   * Reconfigure location watching (e.g., when power mode changes)
+   */
+  async reconfigureWatching(): Promise<void> {
+    if (!this.isWatching) {
+      return;
+    }
+
+    console.log('Reconfiguring location watching...');
+
+    // Stop current watching
+    this.stopWatching();
+
+    // Restart with new configuration
+    await this.startWatching();
+  }
+
   private watchId: number | null = null;
 
   /**
    * Start background geofencing
+   * Configures continuous location tracking for automatic clock in/out
    */
   async startBackgroundGeofencing(): Promise<void> {
     const offices = await SettingsService.getOfficeLocations();
@@ -171,22 +224,28 @@ class LocationService {
       return;
     }
 
-    // Note: Background geofencing requires additional platform-specific setup
-    // For now, foreground geofencing via watchPosition is enabled
-    console.log('Background geofencing: Enabled offices', enabledOffices.length);
+    console.log(`Starting background geofencing for ${enabledOffices.length} offices`);
 
-    // Initialize geofence states
+    // Initialize geofence states for all enabled offices
     for (const office of enabledOffices) {
       this.lastGeofenceState.set(office.id, false);
     }
 
-    try {
-      // Try to configure background geolocation (may not work on all platforms)
-      // The foreground location watcher will handle geofence detection
-      console.log('Background geofencing initialized (foreground active)');
-    } catch (error) {
-      console.warn('Background geofencing not fully supported:', error);
+    // Ensure location watching is started for background tracking
+    // react-native-geolocation-service handles background location updates when:
+    // - iOS: 'always' permission granted + UIBackgroundModes configured
+    // - Android: 'always' permission granted + foreground service permissions
+    if (!this.isWatching) {
+      await this.startWatching();
+      console.log('Background geofencing: Location watching started');
+    } else {
+      console.log('Background geofencing: Location watching already active');
     }
+
+    console.log('Background geofencing initialized successfully');
+    console.log('- Platform:', Platform.OS);
+    console.log('- Offices:', enabledOffices.length);
+    console.log('- Status:', this.isWatching ? 'Active' : 'Inactive');
   }
 
   /**

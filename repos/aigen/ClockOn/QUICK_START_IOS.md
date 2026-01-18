@@ -13,11 +13,11 @@
 ```bash
 # Open Xcode project
 cd /Users/hui/repos/aigen/ClockOn/ios
-open ClockOnTemp.xcworkspace
+open ClockOn.xcworkspace
 
 # In Xcode:
 # 1. Select project in left sidebar
-# 2. Choose target "ClockOnTemp"
+# 2. Choose target "ClockOn"
 # 3. General tab → Bundle Identifier
 # 4. Change to: com.YOURCOMPANY.clockon
 # 5. Save (⌘+S)
@@ -38,7 +38,7 @@ open ClockOnTemp.xcworkspace
 ### STEP 4: Enable Automatic Signing (5 minutes)
 ```bash
 # In Xcode:
-# 1. ClockOnTemp target → Signing & Capabilities
+# 1. ClockOn target → Signing & Capabilities
 # 2. Check "Automatically manage signing"
 # 3. Select your Team (Apple Developer account)
 # 4. Wait for Xcode to create certificate

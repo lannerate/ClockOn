@@ -138,7 +138,7 @@ web-build/
 # iOS specific additions
 ios/Podfile.lock
 ios/*.xcworkspace
-!ios/ClockOnTemp.xcworkspace
+!ios/ClockOn.xcworkspace
 ios/Pods/
 ios/.xcode.env.local
 ios/build/

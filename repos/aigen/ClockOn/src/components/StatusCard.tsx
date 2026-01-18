@@ -8,6 +8,7 @@ interface StatusCardProps {
   isClockedIn: boolean;
   workDuration?: number;
   clockInTime?: string;
+  totalDaysWorked?: number;
   style?: ViewStyle;
 }
 
@@ -15,6 +16,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({
   isClockedIn,
   workDuration = 0,
   clockInTime,
+  totalDaysWorked = 0,
   style,
 }) => {
   const theme = useTheme();
@@ -51,30 +53,49 @@ export const StatusCard: React.FC<StatusCardProps> = ({
           </Text>
         </View>
 
-        {/* Duration Display - Only show when clocked in */}
-        {isClockedIn && (
-          <View style={styles.durationContainer}>
-            <Text variant="titleMedium" style={styles.durationLabel}>
-              Duration
-            </Text>
-            <Text
-              style={[
-                styles.durationValue,
-                {
-                  color: designTokens.colors.primary,
-                  fontSize: designTokens.typography.fontSize.display.small,
-                }
-              ]}
-            >
-              {formatDuration(workDuration)}
-            </Text>
-            {clockInTime && (
-              <Text variant="bodyMedium" style={styles.sinceText}>
-                Since {clockInTime}
+        {/* Duration Display - Always show today's total work time */}
+        <View style={styles.durationContainer}>
+          <Text variant="titleMedium" style={styles.durationLabel}>
+            {isClockedIn ? 'Current Duration' : 'Days Worked in Office'}
+          </Text>
+          {isClockedIn ? (
+            <>
+              <Text
+                style={[
+                  styles.durationValue,
+                  {
+                    color: designTokens.colors.primary,
+                    fontSize: designTokens.typography.fontSize.display.small,
+                  }
+                ]}
+              >
+                {formatDuration(workDuration)}
               </Text>
-            )}
-          </View>
-        )}
+              {clockInTime && (
+                <Text variant="bodyMedium" style={styles.sinceText}>
+                  Since {clockInTime}
+                </Text>
+              )}
+            </>
+          ) : (
+            <>
+              <Text
+                style={[
+                  styles.durationValue,
+                  {
+                    color: designTokens.colors.text.secondary,
+                    fontSize: designTokens.typography.fontSize.display.small,
+                  }
+                ]}
+              >
+                {totalDaysWorked} {totalDaysWorked === 1 ? 'Day' : 'Days'}
+              </Text>
+              <Text variant="bodyMedium" style={styles.sinceText}>
+                Total attendance recorded
+              </Text>
+            </>
+          )}
+        </View>
       </Card.Content>
     </Card>
   );

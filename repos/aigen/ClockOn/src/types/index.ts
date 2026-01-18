@@ -4,6 +4,22 @@ export type ClockType = 'IN' | 'OUT';
 
 export type TriggerMethod = 'AUTOMATIC_GEOFENCE' | 'MANUAL_CHECK';
 
+export type PowerMode = 'high_performance' | 'balanced' | 'power_saver';
+
+export interface PowerModeConfig {
+  distanceFilter: number; // meters
+  interval: number; // milliseconds
+  fastestInterval: number; // milliseconds
+  accuracy: {
+    android: 'low' | 'balanced' | 'high';
+    ios: 'low' | 'nearestTenMeters' | 'hundredMeters' | 'best';
+  };
+  adaptiveUpdates: boolean; // enable adaptive location updates
+  significantLocationChange: boolean; // use iOS significant location change when far
+  description: string;
+  batteryImpact: 'Low' | 'Medium' | 'High';
+}
+
 export interface Location {
   latitude: number;
   longitude: number;
@@ -62,6 +78,7 @@ export interface AppSettings {
   debounceMinutes: number; // default 5
   dwellTimeSeconds: number; // default 30
   maxAccuracyMeters: number; // default 50
+  powerMode: PowerMode; // battery optimization mode
 }
 
 export interface MonthlyStats {

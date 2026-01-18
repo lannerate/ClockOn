@@ -38,11 +38,10 @@ export const OfficeLocationCard: React.FC<OfficeLocationCardProps> = ({
           <Button
             mode="contained-tonal"
             onPress={onAdd}
-            icon="plus-circle"
             style={styles.addButton}
             contentStyle={styles.addButtonContent}
           >
-            Add
+            ➕ Add
           </Button>
         )}
       />

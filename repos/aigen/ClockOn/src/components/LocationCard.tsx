@@ -1,7 +1,7 @@
 // LocationCard - Displays current location and geofence status
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { Card, Text, useTheme, IconButton } from 'react-native-paper';
+import { Card, Text, useTheme } from 'react-native-paper';
 import { designTokens } from '../theme/theme';
 import { LocationStatus } from '../types';
 
@@ -32,15 +32,7 @@ export const LocationCard: React.FC<LocationCardProps> = ({
       <Card.Title
         title="Location Status"
         titleVariant="titleLarge"
-        left={(props) => (
-          <IconButton
-            {...props}
-            icon="map-marker-radius"
-            size={24}
-            iconColor={statusColor}
-            style={{ marginLeft: -8 }}
-          />
-        )}
+        left={() => <Text style={{ fontSize: 24 }}>📍</Text>}
       />
       <Card.Content>
         <View style={styles.locationRow}>

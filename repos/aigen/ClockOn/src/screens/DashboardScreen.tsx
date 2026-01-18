@@ -1,6 +1,6 @@
 // Dashboard screen - main attendance status display (Enhanced UI)
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,11 +13,13 @@ import {
   useTheme,
   Divider,
 } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
 import { format } from 'date-fns';
 import useAppStore from '../store/useAppStore';
 import ClockService from '../services/ClockService';
 import LocationService from '../services/LocationService';
 import SettingsService from '../services/SettingsService';
+import DatabaseService from '../database/DatabaseService';
 import { formatDistance, isInGeofence as checkInGeofence } from '../utils/location';
 import { EmployeeRecord } from '../types';
 
@@ -43,16 +45,35 @@ const DashboardScreen: React.FC = () => {
   } = useAppStore();
 
   const [workDuration, setWorkDuration] = useState(0);
+  const [totalDaysWorked, setTotalDaysWorked] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Ref to track timer ID
+  const durationIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Load initial data
   useEffect(() => {
     initializeData();
 
-    // Subscribe to clock events
-    const unsubscribe = ClockService.onClockEvent((record) => {
+    // Subscribe to clock events - refresh ALL dashboard data immediately
+    const unsubscribe = ClockService.onClockEvent(async (record) => {
       setRecentEvent(record);
-      refreshStatus();
+
+      // Refresh everything in parallel for instant updates
+      // Use Promise.all to execute all queries simultaneously
+      const [status, location] = await Promise.all([
+        ClockService.getStatus(),
+        LocationService.getCurrentLocation(),
+      ]);
+
+      // Update all state immediately - no waiting between updates
+      setClockStatus(status);
+      updateWorkDuration();
+      updateTotalDaysWorked();
+
+      if (location) {
+        await updateLocationStatus(location);
+      }
     });
 
     // Subscribe to location errors
@@ -71,20 +92,43 @@ const DashboardScreen: React.FC = () => {
     // Start location watching
     LocationService.startWatching();
 
-    // Timer for work duration
-    const durationInterval = setInterval(() => {
-      if (clockStatus?.isClockedIn) {
-        updateWorkDuration();
-      }
-    }, 1000);
-
     return () => {
       unsubscribe();
       unsubscribeError();
       unsubscribeLocation();
-      clearInterval(durationInterval);
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+      }
     };
   }, []);
+
+  // Separate effect for timer to access latest clockStatus
+  useEffect(() => {
+    // Clear any existing timer
+    if (durationIntervalRef.current) {
+      clearInterval(durationIntervalRef.current);
+    }
+
+    // Timer for work duration - update when clocked in for live counter
+    if (clockStatus?.isClockedIn) {
+      durationIntervalRef.current = setInterval(() => {
+        updateWorkDuration();
+      }, 1000);
+    }
+
+    return () => {
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+      }
+    };
+  }, [clockStatus?.isClockedIn]); // Re-run when clock status changes
+
+  // Refresh all data when dashboard comes into focus (after deleting records, etc.)
+  useFocusEffect(
+    useCallback(() => {
+      refreshAll();
+    }, [])
+  );
 
   const initializeData = async () => {
     try {
@@ -104,6 +148,9 @@ const DashboardScreen: React.FC = () => {
 
       await refreshStatus();
 
+      // Update total days worked
+      await updateTotalDaysWorked();
+
       // Get current location
       const location = await LocationService.getCurrentLocation();
       if (location) {
@@ -114,16 +161,6 @@ const DashboardScreen: React.FC = () => {
       console.error('Initialization error:', err);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const refreshStatus = async () => {
-    try {
-      const status = await ClockService.getStatus();
-      setClockStatus(status);
-      await updateWorkDuration();
-    } catch (err) {
-      console.error('Failed to refresh status:', err);
     }
   };
 
@@ -144,12 +181,69 @@ const DashboardScreen: React.FC = () => {
     setWorkDuration(duration);
   };
 
+  const updateTotalDaysWorked = async () => {
+    try {
+      const employeeId = await SettingsService.getEmployeeId();
+      if (!employeeId) {
+        return;
+      }
+
+      const allRecords = await DatabaseService.getAllRecords(employeeId);
+
+      // Count unique days with clock-in records
+      const uniqueDays = new Set<string>();
+      allRecords.forEach((record) => {
+        const date = new Date(record.timestamp);
+        const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+        uniqueDays.add(dateKey);
+      });
+
+      setTotalDaysWorked(uniqueDays.size);
+    } catch (error) {
+      console.error('Failed to update total days worked:', error);
+    }
+  };
+
+  // Comprehensive refresh - updates ALL dashboard data in parallel
+  const refreshAll = async () => {
+    try {
+      // Refresh all data in parallel for maximum speed
+      const [status, location] = await Promise.all([
+        ClockService.getStatus(),
+        LocationService.getCurrentLocation(),
+      ]);
+
+      // Update clock status and work duration
+      setClockStatus(status);
+      updateWorkDuration();
+      updateTotalDaysWorked();
+
+      // Update location status if we got a location
+      if (location) {
+        await updateLocationStatus(location);
+      }
+    } catch (err) {
+      console.error('Failed to refresh all data:', err);
+    }
+  };
+
+  const refreshStatus = async () => {
+    try {
+      const status = await ClockService.getStatus();
+      setClockStatus(status);
+      await updateWorkDuration();
+    } catch (err) {
+      console.error('Failed to refresh status:', err);
+    }
+  };
+
   const handleClockIn = async () => {
     try {
       setIsLoading(true);
       const record = await ClockService.clockIn();
       if (record) {
         Alert.alert('Success', `Clocked IN at ${formatTime(record.timestamp)}`);
+        // Clock event listener will trigger refreshAll automatically
       }
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to clock in');
@@ -164,6 +258,7 @@ const DashboardScreen: React.FC = () => {
       const record = await ClockService.clockOut();
       if (record) {
         Alert.alert('Success', `Clocked OUT at ${formatTime(record.timestamp)}`);
+        // Clock event listener will trigger refreshAll automatically
       }
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to clock out');
@@ -174,11 +269,7 @@ const DashboardScreen: React.FC = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refreshStatus();
-    const location = await LocationService.getCurrentLocation();
-    if (location) {
-      updateLocationStatus(location);
-    }
+    await refreshAll();
     setRefreshing(false);
   };
 
@@ -218,6 +309,7 @@ const DashboardScreen: React.FC = () => {
         isClockedIn={isClockedIn}
         workDuration={workDuration}
         clockInTime={clockStatus?.currentRecord ? formatTime(clockStatus.currentRecord.timestamp) : undefined}
+        totalDaysWorked={totalDaysWorked}
       />
 
       {/* Location Card - Shows geofence status */}
@@ -240,36 +332,10 @@ const DashboardScreen: React.FC = () => {
       </View>
 
       {/* Today's Activity */}
-      <ActivityCard records={clockStatus?.todayRecords || []} />
-
-      {/* Last Activity Summary */}
-      {(clockStatus?.lastClockIn || clockStatus?.lastClockOut) && (
-        <View style={styles.lastActivityContainer}>
-          <Text variant="titleLarge" style={styles.sectionTitle}>
-            Last Activity
-          </Text>
-          {clockStatus?.lastClockIn && (
-            <View style={styles.lastActivityItem}>
-              <Text variant="bodyMedium" style={styles.lastActivityLabel}>
-                Last Clock In
-              </Text>
-              <Text variant="bodyMedium" style={styles.lastActivityValue}>
-                {formatTime(clockStatus.lastClockIn.timestamp)}
-              </Text>
-            </View>
-          )}
-          {clockStatus?.lastClockOut && (
-            <View style={styles.lastActivityItem}>
-              <Text variant="bodyMedium" style={styles.lastActivityLabel}>
-                Last Clock Out
-              </Text>
-              <Text variant="bodyMedium" style={styles.lastActivityValue}>
-                {formatTime(clockStatus.lastClockOut.timestamp)}
-              </Text>
-            </View>
-          )}
-        </View>
-      )}
+      <ActivityCard
+        records={clockStatus?.todayRecords || []}
+        onRefresh={refreshAll}
+      />
     </ScrollView>
   );
 };
@@ -286,37 +352,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     marginTop: 16,
-  },
-  sectionTitle: {
-    fontWeight: '600' as const,
-    fontSize: 22,
-    color: '#1E293B',
-    marginBottom: 16,
-  },
-  lastActivityContainer: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 24,
-    borderRadius: 12,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  lastActivityItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  lastActivityLabel: {
-    color: '#475569',
-  },
-  lastActivityValue: {
-    fontWeight: '600' as const,
-    color: '#1E293B',
   },
 });
 

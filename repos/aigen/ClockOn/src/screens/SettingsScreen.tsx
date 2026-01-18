@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import {
   Card,
@@ -19,12 +20,14 @@ import {
   Dialog,
   Portal,
   Modal,
+  RadioButton,
 } from 'react-native-paper';
 import useAppStore from '../store/useAppStore';
 import SettingsService from '../services/SettingsService';
 import LocationService from '../services/LocationService';
-import { OfficeLocation } from '../types';
+import { OfficeLocation, PowerMode } from '../types';
 import { validateEmployeeId, validateOfficeLocation } from '../utils/validation';
+import { getPowerModeDescription, getEstimatedBatteryUsage } from '../config/powerModeConfig';
 
 const SettingsScreen: React.FC = () => {
   const {
@@ -36,6 +39,8 @@ const SettingsScreen: React.FC = () => {
   } = useAppStore();
 
   const [localEmployeeId, setLocalEmployeeId] = useState(employeeId);
+  const [powerMode, setPowerMode] = useState<PowerMode>('balanced');
+  const [showPowerModeInfo, setShowPowerModeInfo] = useState(false);
   const [showAddLocation, setShowAddLocation] = useState(false);
   const [editingLocation, setEditingLocation] = useState<OfficeLocation | null>(
     null
@@ -60,6 +65,9 @@ const SettingsScreen: React.FC = () => {
 
       const locations = await SettingsService.getOfficeLocations();
       setOfficeLocations(locations);
+
+      const mode = await SettingsService.getPowerMode();
+      setPowerMode(mode);
     } catch (err) {
       console.error('Failed to load settings:', err);
     }
@@ -78,6 +86,25 @@ const SettingsScreen: React.FC = () => {
       Alert.alert('Success', 'Employee ID saved');
     } catch (err) {
       Alert.alert('Error', 'Failed to save employee ID');
+    }
+  };
+
+  const handlePowerModeChange = async (mode: PowerMode) => {
+    try {
+      await SettingsService.setPowerMode(mode);
+      setPowerMode(mode);
+
+      // Reconfigure location tracking with new power mode
+      await LocationService.reconfigureWatching();
+
+      Alert.alert(
+        'Power Mode Updated',
+        `Location tracking updated to ${mode.replace('_', ' ')} mode.\n\n${getEstimatedBatteryUsage(mode)}`,
+        [{ text: 'OK' }]
+      );
+    } catch (err) {
+      console.error('Failed to update power mode:', err);
+      Alert.alert('Error', 'Failed to update power mode');
     }
   };
 
@@ -229,7 +256,7 @@ const SettingsScreen: React.FC = () => {
       <Card style={styles.card}>
         <Card.Title
           title="Employee Configuration"
-          left={(props) => <List.Icon {...props} icon="account-circle" size={24} />}
+          left={() => <Text style={{ fontSize: 24 }}>👤</Text>}
         />
         <Card.Content>
           <TextInput
@@ -243,26 +270,132 @@ const SettingsScreen: React.FC = () => {
             mode="contained"
             onPress={handleSaveEmployeeId}
             style={styles.button}
-            icon="check-circle"
           >
-            Save Employee ID
+            ✅ Save Employee ID
           </Button>
         </Card.Content>
       </Card>
+
+      {/* Power Mode Section */}
+      <Card style={styles.card}>
+        <Card.Title
+          title="Battery Optimization"
+          left={() => <Text style={{ fontSize: 24 }}>🔋</Text>}
+          right={() => (
+            <TouchableOpacity onPress={() => setShowPowerModeInfo(true)}>
+              <Text style={{ fontSize: 20, marginRight: 8 }}>ℹ️</Text>
+            </TouchableOpacity>
+          )}
+        />
+        <Card.Content>
+          <Text style={styles.powerDescription}>
+            Current: {powerMode.replace('_', ' ')}
+          </Text>
+          <Text style={styles.powerSubtitle}>
+            {getEstimatedBatteryUsage(powerMode)}
+          </Text>
+
+          <Divider style={styles.divider} />
+
+          <TouchableOpacity
+            style={styles.powerModeItem}
+            onPress={() => handlePowerModeChange('high_performance')}
+          >
+            <View style={styles.powerModeRow}>
+              <Text style={{ fontSize: 24 }}>🚀</Text>
+              <View style={styles.powerModeText}>
+                <Text style={styles.powerModeTitle}>High Performance</Text>
+                <Text style={styles.powerModeDesc}>Maximum accuracy, 3-5% battery/hour</Text>
+              </View>
+              <Text style={styles.powerModeIndicator}>
+                {powerMode === 'high_performance' ? '✅' : '⚪'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.powerModeItem}
+            onPress={() => handlePowerModeChange('balanced')}
+          >
+            <View style={styles.powerModeRow}>
+              <Text style={{ fontSize: 24 }}>⚖️</Text>
+              <View style={styles.powerModeText}>
+                <Text style={styles.powerModeTitle}>Balanced</Text>
+                <Text style={styles.powerModeDesc}>Good accuracy, 1-2% battery/hour (Recommended)</Text>
+              </View>
+              <Text style={styles.powerModeIndicator}>
+                {powerMode === 'balanced' ? '✅' : '⚪'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.powerModeItem}
+            onPress={() => handlePowerModeChange('power_saver')}
+          >
+            <View style={styles.powerModeRow}>
+              <Text style={{ fontSize: 24 }}>🍃</Text>
+              <View style={styles.powerModeText}>
+                <Text style={styles.powerModeTitle}>Power Saver</Text>
+                <Text style={styles.powerModeDesc}>Basic accuracy, &lt;1% battery/hour</Text>
+              </View>
+              <Text style={styles.powerModeIndicator}>
+                {powerMode === 'power_saver' ? '✅' : '⚪'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </Card.Content>
+      </Card>
+
+      {/* Power Mode Info Dialog */}
+      <Portal>
+        <Dialog
+          visible={showPowerModeInfo}
+          onDismiss={() => setShowPowerModeInfo(false)}
+        >
+          <Dialog.Title>About Power Modes</Dialog.Title>
+          <Dialog.Content>
+            <Text style={styles.infoText}>
+              Power modes control how frequently your location is tracked for automatic clock in/out.
+            </Text>
+            <Divider style={styles.divider} />
+            <Text style={styles.infoTitle}>🚀 High Performance</Text>
+            <Text style={styles.infoText}>
+              Maximum accuracy with frequent updates (every 3-5 seconds). Best for precise geofencing but uses more battery.
+            </Text>
+            <Divider style={styles.divider} />
+            <Text style={styles.infoTitle}>⚖️ Balanced (Recommended)</Text>
+            <Text style={styles.infoText}>
+              Good accuracy with moderate updates (every 10 seconds). Automatically uses less power when far from office.
+            </Text>
+            <Divider style={styles.divider} />
+            <Text style={styles.infoTitle}>🍃 Power Saver</Text>
+            <Text style={styles.infoText}>
+              Maximum battery savings with basic accuracy (every 30 seconds). Best for large geofences or all-day tracking.
+            </Text>
+            <Divider style={styles.divider} />
+            <Text style={styles.infoNote}>
+              💡 Tip: Adaptive updates are enabled in all modes. The app uses less power when you're far from the office.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setShowPowerModeInfo(false)}>Got it!</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
 
       {/* Office Locations Section */}
       <Card style={styles.card}>
         <Card.Title
           title="Office Locations"
-          left={(props) => <List.Icon {...props} icon="map-marker-multiple" size={24} />}
+          left={() => <Text style={{ fontSize: 24 }}>📍</Text>}
           right={(props) => (
             <Button
               {...props}
               mode="text"
               onPress={handleAddLocation}
-              icon="plus-circle"
             >
-              Add
+              ➕ Add
             </Button>
           )}
         />
@@ -278,7 +411,7 @@ const SettingsScreen: React.FC = () => {
                 <List.Item
                   title={location.name}
                   description={`${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)} - ${location.radius}m`}
-                  left={(props) => <List.Icon {...props} icon="office-building" />}
+                  left={() => <Text style={{ fontSize: 24, marginRight: 12 }}>🏢</Text>}
                   right={() => (
                     <Switch
                       value={location.enabled}
@@ -293,17 +426,15 @@ const SettingsScreen: React.FC = () => {
                   <Button
                     mode="text"
                     onPress={() => handleEditLocation(location)}
-                    icon="pencil-outline"
                   >
-                    Edit
+                    ✏️ Edit
                   </Button>
                   <Button
                     mode="text"
                     onPress={() => handleDeleteLocation(location.id)}
-                    icon="trash-can-outline"
                     textColor="#B00020"
                   >
-                    Delete
+                    🗑️ Delete
                   </Button>
                 </View>
                 {index < officeLocations.length - 1 && <Divider />}
@@ -317,7 +448,7 @@ const SettingsScreen: React.FC = () => {
       <Card style={styles.card}>
         <Card.Title
           title="How It Works"
-          left={(props) => <List.Icon {...props} icon="information-outline" size={24} />}
+          left={() => <Text style={{ fontSize: 24 }}>ℹ️</Text>}
         />
         <Card.Content>
           <Text variant="bodyMedium" style={styles.infoText}>
@@ -334,18 +465,37 @@ const SettingsScreen: React.FC = () => {
         <Dialog
           visible={showAddLocation}
           onDismiss={() => setShowAddLocation(false)}
+          style={styles.dialog}
         >
-          <Dialog.Title>
+          <Dialog.Title style={styles.dialogTitle}>
             {editingLocation ? 'Edit Location' : 'Add Location'}
           </Dialog.Title>
-          <Dialog.ScrollArea>
-            <ScrollView contentContainerStyle={styles.dialogContent}>
+
+          {/* Action Buttons at Top */}
+          <Dialog.Actions style={styles.dialogActionsTop}>
+            <Button onPress={() => setShowAddLocation(false)}>
+              Cancel
+            </Button>
+            <Button onPress={handleSaveLocation} mode="contained">
+              Save
+            </Button>
+          </Dialog.Actions>
+
+          <Divider style={styles.dialogDivider} />
+
+          <Dialog.ScrollArea style={styles.dialogScrollArea}>
+            <ScrollView
+              contentContainerStyle={styles.dialogContent}
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled
+            >
               <TextInput
                 label="Location Name"
                 value={locationName}
                 onChangeText={setLocationName}
                 mode="outlined"
                 style={styles.input}
+                dense
               />
 
               <View style={styles.coordRow}>
@@ -356,6 +506,7 @@ const SettingsScreen: React.FC = () => {
                   mode="outlined"
                   keyboardType="decimal-pad"
                   style={styles.coordInput}
+                  dense
                 />
                 <TextInput
                   label="Longitude"
@@ -364,16 +515,17 @@ const SettingsScreen: React.FC = () => {
                   mode="outlined"
                   keyboardType="decimal-pad"
                   style={styles.coordInput}
+                  dense
                 />
               </View>
 
               <Button
                 mode="outlined"
                 onPress={handleGetCurrentLocation}
-                icon="crosshairs-gps"
                 style={styles.input}
+                compact
               >
-                Use Current Location
+                📍 Use Current Location
               </Button>
 
               <TextInput
@@ -383,10 +535,11 @@ const SettingsScreen: React.FC = () => {
                 mode="outlined"
                 keyboardType="number-pad"
                 style={styles.input}
+                dense
               />
 
               <View style={styles.switchRow}>
-                <Text variant="bodyLarge">Enabled</Text>
+                <Text variant="bodyMedium">Enabled</Text>
                 <Switch
                   value={locationEnabled}
                   onValueChange={setLocationEnabled}
@@ -394,14 +547,6 @@ const SettingsScreen: React.FC = () => {
               </View>
             </ScrollView>
           </Dialog.ScrollArea>
-          <Dialog.Actions>
-            <Button onPress={() => setShowAddLocation(false)} icon="close-circle-outline">
-              Cancel
-            </Button>
-            <Button onPress={handleSaveLocation} icon="check-circle-outline">
-              Save
-            </Button>
-          </Dialog.Actions>
         </Dialog>
       </Portal>
     </ScrollView>
@@ -418,7 +563,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   input: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   button: {
     marginTop: 8,
@@ -437,8 +582,32 @@ const styles = StyleSheet.create({
   infoText: {
     lineHeight: 24,
   },
+  dialog: {
+    maxHeight: '85%',
+    alignSelf: 'center',
+    width: '90%',
+    maxWidth: 500,
+    justifyContent: 'flex-start',
+  },
+  dialogTitle: {
+    paddingVertical: 8,
+    paddingHorizontal: 24,
+  },
+  dialogActionsTop: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    justifyContent: 'flex-end',
+  },
+  dialogDivider: {
+    marginHorizontal: 16,
+    marginTop: 8,
+  },
+  dialogScrollArea: {
+    paddingHorizontal: 24,
+    maxHeight: '80%',
+  },
   dialogContent: {
-    paddingVertical: 16,
+    paddingVertical: 8,
   },
   coordRow: {
     flexDirection: 'row',
@@ -452,6 +621,63 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 4,
+  },
+  powerDescription: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  powerSubtitle: {
+    fontSize: 14,
+    opacity: 0.7,
+    marginBottom: 8,
+  },
+  divider: {
+    marginVertical: 12,
+  },
+  powerModeItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginHorizontal: -16,
+    marginVertical: 4,
+  },
+  powerModeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  powerModeText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  powerModeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  powerModeDesc: {
+    fontSize: 14,
+    opacity: 0.7,
+    marginTop: 2,
+  },
+  powerModeIndicator: {
+    fontSize: 24,
+  },
+  infoText: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  infoTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  infoNote: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    opacity: 0.8,
     marginTop: 8,
   },
 });

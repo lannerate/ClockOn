@@ -1,4 +1,4 @@
-package com.clockontemp
+package com.ClockOn
 
 import android.app.Application
 import com.facebook.react.PackageList
