@@ -97,7 +97,7 @@ const MonthlyStatsScreen: React.FC = () => {
       <Card style={styles.card}>
         <Card.Title
           title="Select Month"
-          left={(props) => <List.Icon {...props} icon="calendar-month-outline" size={24} />}
+          left={(props) => <List.Icon {...props} icon="calendar-multiple" size={24} />}
         />
         <Card.Content>
           <ScrollView
@@ -116,7 +116,7 @@ const MonthlyStatsScreen: React.FC = () => {
                 }
                 onPress={() => setSelectedMonth(stats)}
                 style={styles.monthButton}
-                icon="calendar-outline"
+                icon="calendar-month"
               >
                 {monthNames[stats.month - 1].substring(0, 3)}
               </Button>
@@ -148,7 +148,7 @@ const MonthlyStatsScreen: React.FC = () => {
         <Card.Title
           title={formatMonthYear(selectedMonth.year, selectedMonth.month)}
           subtitle="Monthly Attendance Summary"
-          left={(props) => <List.Icon {...props} icon="chart-line-variant" size={24} />}
+          left={(props) => <List.Icon {...props} icon="chart-bar" size={24} />}
         />
         <Card.Content>
           {/* Attendance Rate */}
@@ -177,7 +177,7 @@ const MonthlyStatsScreen: React.FC = () => {
           <View style={styles.statsGrid}>
             <View style={styles.gridItem}>
               <Text variant="bodyMedium" style={styles.statLabel}>
-                ✓ Days Worked
+                ✅ Days Worked
               </Text>
               <Text variant="headlineSmall" style={styles.statValue}>
                 {selectedMonth.daysClockedIn}
@@ -186,7 +186,7 @@ const MonthlyStatsScreen: React.FC = () => {
 
             <View style={styles.gridItem}>
               <Text variant="bodyMedium" style={styles.statLabel}>
-                📅 Working Days
+                📆 Working Days
               </Text>
               <Text variant="headlineSmall" style={styles.statValue}>
                 {selectedMonth.totalWorkingDays}
@@ -195,7 +195,7 @@ const MonthlyStatsScreen: React.FC = () => {
 
             <View style={styles.gridItem}>
               <Text variant="bodyMedium" style={styles.statLabel}>
-                ⏱ Total Hours
+                ⏰ Total Hours
               </Text>
               <Text variant="headlineSmall" style={styles.statValue}>
                 {selectedMonth.totalHours.toFixed(1)}h
@@ -207,7 +207,7 @@ const MonthlyStatsScreen: React.FC = () => {
 
           {/* Daily Records */}
           <View style={styles.sectionHeader}>
-            <List.Icon icon="view-list" size={20} />
+            <List.Icon icon="calendar-text" size={20} />
             <Text variant="titleLarge" style={styles.sectionTitle}>
               Daily Records
             </Text>
@@ -226,8 +226,13 @@ const MonthlyStatsScreen: React.FC = () => {
                         {...props}
                         icon={
                           record.clockType === 'IN'
-                            ? 'arrow-right-bold-circle'
-                            : 'arrow-left-bold-circle'
+                            ? 'login-variant'
+                            : 'logout-variant'
+                        }
+                        iconColor={
+                          record.clockType === 'IN'
+                            ? theme.colors.primary
+                            : theme.colors.error
                         }
                       />
                     )}
@@ -238,6 +243,7 @@ const MonthlyStatsScreen: React.FC = () => {
                           props.style,
                           {
                             alignSelf: 'center',
+                            fontWeight: '600',
                             color:
                               record.clockType === 'IN'
                                 ? theme.colors.primary
