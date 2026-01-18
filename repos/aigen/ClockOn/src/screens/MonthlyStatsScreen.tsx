@@ -7,6 +7,7 @@ import {
   ScrollView,
   RefreshControl,
   Dimensions,
+  SafeAreaView,
 } from 'react-native';
 import {
   Card,
@@ -23,7 +24,7 @@ import SettingsService from '../services/SettingsService';
 import MonthlyStatsService from '../services/MonthlyStatsService';
 import { MonthlyStats } from '../types';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const MonthlyStatsScreen: React.FC = () => {
   const theme = useTheme();
@@ -157,8 +158,8 @@ const MonthlyStatsScreen: React.FC = () => {
                 Attendance Rate
               </Text>
               <Text
-                variant="displaySmall"
-                style={[styles.statValue, { color: attendanceColor }]}
+                variant="headlineLarge"
+                style={[styles.statValue, { color: attendanceColor, fontSize: 48 }]}
               >
                 {selectedMonth.attendanceRate.toFixed(1)}%
               </Text>
@@ -175,28 +176,28 @@ const MonthlyStatsScreen: React.FC = () => {
           {/* Days Stats */}
           <View style={styles.statsGrid}>
             <View style={styles.gridItem}>
-              <Text variant="titleMedium" style={styles.statLabel}>
+              <Text variant="bodyMedium" style={styles.statLabel}>
                 ✓ Days Worked
               </Text>
-              <Text variant="headlineMedium" style={styles.statValue}>
+              <Text variant="headlineSmall" style={styles.statValue}>
                 {selectedMonth.daysClockedIn}
               </Text>
             </View>
 
             <View style={styles.gridItem}>
-              <Text variant="titleMedium" style={styles.statLabel}>
+              <Text variant="bodyMedium" style={styles.statLabel}>
                 📅 Working Days
               </Text>
-              <Text variant="headlineMedium" style={styles.statValue}>
+              <Text variant="headlineSmall" style={styles.statValue}>
                 {selectedMonth.totalWorkingDays}
               </Text>
             </View>
 
             <View style={styles.gridItem}>
-              <Text variant="titleMedium" style={styles.statLabel}>
+              <Text variant="bodyMedium" style={styles.statLabel}>
                 ⏱ Total Hours
               </Text>
-              <Text variant="headlineMedium" style={styles.statValue}>
+              <Text variant="headlineSmall" style={styles.statValue}>
                 {selectedMonth.totalHours.toFixed(1)}h
               </Text>
             </View>
@@ -261,51 +262,72 @@ const MonthlyStatsScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-    >
-      {statsList.length > 0 && renderMonthSelector()}
-      {renderStatsCard()}
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        {statsList.length > 0 && renderMonthSelector()}
+        {renderStatsCard()}
 
-      {/* Info Card */}
-      <Card style={styles.card}>
-        <Card.Title
-          title="About Attendance Rate"
-          left={(props) => <List.Icon {...props} icon="help-circle-outline" size={24} />}
-        />
-        <Card.Content>
-          <Text variant="bodyMedium" style={styles.infoText}>
-            Attendance Rate = (Days Clocked In ÷ Working Days) × 100%{'\n\n'}
-            Working days are Monday to Friday, excluding weekends.{'\n\n'}
-            Each day with at least one clock-in record counts as a worked day.
-          </Text>
-        </Card.Content>
-      </Card>
-    </ScrollView>
+        {/* Info Card */}
+        <Card style={styles.card}>
+          <Card.Content style={styles.infoCard}>
+            <View style={styles.infoHeader}>
+              <List.Icon icon="information-outline" size={24} />
+              <Text variant="titleMedium" style={styles.infoTitle}>
+                About Attendance Rate
+              </Text>
+            </View>
+            <Text variant="bodyMedium" style={styles.infoText}>
+              Attendance Rate = (Days Clocked In ÷ Working Days) × 100%
+              {'\n\n'}
+              Working days are Monday to Friday, excluding weekends.
+              {'\n\n'}
+              Each day with at least one clock-in record counts as a worked day.
+            </Text>
+          </Card.Content>
+        </Card>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   card: {
-    margin: 16,
-    elevation: 2,
+    marginHorizontal: 16,
+    marginVertical: 12,
+    elevation: 4,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   monthSelector: {
-    marginVertical: 8,
+    marginVertical: 12,
+    paddingHorizontal: 8,
   },
   monthButton: {
-    marginRight: 8,
+    marginRight: 12,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
   },
   statRow: {
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
   },
   statItem: {
     width: '100%',
@@ -314,27 +336,32 @@ const styles = StyleSheet.create({
   statLabel: {
     textAlign: 'center',
     opacity: 0.7,
-    marginBottom: 8,
+    marginBottom: 12,
+    fontSize: 14,
+    fontWeight: '500',
   },
   statValue: {
     fontWeight: 'bold',
   },
   progressBar: {
     width: '100%',
-    marginTop: 8,
-    height: 12,
-    borderRadius: 6,
+    marginTop: 12,
+    height: 10,
+    borderRadius: 5,
   },
   divider: {
-    marginVertical: 16,
+    marginVertical: 20,
   },
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
   },
   gridItem: {
     alignItems: 'center',
+    flex: 1,
+    paddingHorizontal: 8,
   },
   sectionTitle: {
     marginBottom: 12,
@@ -343,7 +370,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
-    gap: 8,
   },
   recordsList: {
     marginTop: 8,
@@ -351,10 +377,25 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     opacity: 0.5,
-    padding: 16,
+    padding: 24,
+    fontSize: 14,
+  },
+  infoCard: {
+    paddingVertical: 16,
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   infoText: {
-    lineHeight: 22,
+    lineHeight: 24,
+    fontSize: 14,
+    opacity: 0.8,
   },
 });
 
