@@ -24,6 +24,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.business</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -33,52 +35,12 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<!-- Location Permissions - Required for App Store -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>ClockOn uses Face ID or Touch ID to securely verify your identity when clocking in or out.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>ClockOn needs background location access to automatically track your attendance when you arrive at or leave the office, even when the app is not actively in use.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>ClockOn needs access to your location to automatically clock you in when you arrive at the office and clock you out when you leave.</string>
-	<!-- Privacy - Tracking Description -->
-	<key>NSUserTrackingUsageDescription</key>
-	<string>We do not track your data. This permission is only used if you choose to allow personalized ads.</string>
-	<!-- Face ID / Touch ID -->
-	<key>NSFaceIDUsageDescription</key>
-	<string>ClockOn uses Face ID or Touch ID to securely verify your identity when clocking in or out.</string>
-	<key>RCTNewArchEnabled</key>
-	<false/>
-	<!-- Background Modes -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>location</string>
-		<string>fetch</string>
-	</array>
-	<!-- Launch Screen -->
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<!-- Device Capabilities -->
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>arm64</string>
-	</array>
-	<!-- Supported Orientations -->
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<!-- Status Bar -->
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
-	<!-- App Category -->
-	<key>LSApplicationCategoryType</key>
-	<string>public.app-category.business</string>
-	<!-- Privacy Manifest -->
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
 		<dict>
@@ -98,5 +60,33 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>We do not track your data. This permission is only used if you choose to allow personalized ads.</string>
+	<key>RCTNewArchEnabled</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 </dict>
 </plist>
