@@ -101,9 +101,12 @@ Common queries:
 - Manifest permissions in `android/app/src/main/AndroidManifest.xml`
 
 **iOS:**
+- App name: "ClockOn" (renamed from "ClockOnTemp" Jan 2025)
 - Requires `whenInUse` or `always` authorization
 - Background geofencing requires Info.plist configuration
 - CocoaPods dependencies managed via Podfile
+- **Important:** When renaming iOS app, the `.xcscheme` file contains hardcoded references that must be updated separately from `project.pbxproj`
+- Bundle identifier remains `org.reactjs.native.example.ClockOnTemp` (contains legacy name)
 
 ### Key Patterns
 
