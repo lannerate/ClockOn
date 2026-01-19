@@ -242,17 +242,28 @@ class ClockService {
   private handleGeofenceEvent = async (
     event: any
   ): Promise<void> => {
+    console.log('🚪 Geofence event received:', event.type, 'at', event.location.name);
+
     const employeeId = await SettingsService.getEmployeeId();
     if (!employeeId) {
-      console.log('No employee ID configured, skipping automatic clock');
+      console.log('⚠️ No employee ID configured, skipping automatic clock');
       return;
     }
 
     const settings = await SettingsService.getSettings();
     const status = await this.getStatus();
 
+    console.log('📊 Current clock status:', status.isClockedIn ? 'CLOCKED IN' : 'CLOCKED OUT');
+
     // Entry event - clock in
-    if (event.type === 'entry' && !status.isClockedIn) {
+    if (event.type === 'entry') {
+      if (status.isClockedIn) {
+        console.log('✋ Already clocked in, skipping automatic clock in');
+        return;
+      }
+
+      console.log('🟢 Processing automatic clock IN...');
+
       // Check debounce time
       if (status.lastClockOut) {
         const debounceCheck = validateDebounceTime(
@@ -261,7 +272,7 @@ class ClockService {
         );
 
         if (!debounceCheck.valid) {
-          console.log('Debounce active, skipping automatic clock in');
+          console.log(`⏱️ Debounce active (${debounceCheck.remainingSeconds}s remaining), skipping automatic clock in`);
           return;
         }
       }
@@ -274,9 +285,10 @@ class ClockService {
         );
 
         if (!accuracyCheck.valid) {
-          console.log('Low accuracy, skipping automatic clock in:', accuracyCheck.error);
+          console.log('📍 Low accuracy, skipping automatic clock in:', accuracyCheck.error);
           return;
         }
+        console.log(`📍 GPS accuracy: ${Math.round(event.currentPosition.accuracy)}m`);
       }
 
       // Create automatic clock in record
@@ -291,10 +303,18 @@ class ClockService {
       await this.refreshStatus();
       this.notifyClockEvent(record);
 
-      console.log('Automatic clock IN:', record.id);
+      console.log('✅ Automatic clock IN successful:', record.id);
+      console.log('🕐 Timestamp:', new Date(record.timestamp).toLocaleString());
     }
     // Exit event - clock out
-    else if (event.type === 'exit' && status.isClockedIn) {
+    else if (event.type === 'exit') {
+      if (!status.isClockedIn) {
+        console.log('✋ Not clocked in, skipping automatic clock out');
+        return;
+      }
+
+      console.log('🔴 Processing automatic clock OUT...');
+
       // Check debounce time
       if (status.currentRecord) {
         const debounceCheck = validateDebounceTime(
@@ -303,7 +323,7 @@ class ClockService {
         );
 
         if (!debounceCheck.valid) {
-          console.log('Debounce active, skipping automatic clock out');
+          console.log(`⏱️ Debounce active (${debounceCheck.remainingSeconds}s remaining), skipping automatic clock out`);
           return;
         }
       }
@@ -320,7 +340,8 @@ class ClockService {
       await this.refreshStatus();
       this.notifyClockEvent(record);
 
-      console.log('Automatic clock OUT:', record.id);
+      console.log('✅ Automatic clock OUT successful:', record.id);
+      console.log('🕐 Timestamp:', new Date(record.timestamp).toLocaleString());
     }
   };
 

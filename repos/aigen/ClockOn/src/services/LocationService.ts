@@ -268,14 +268,17 @@ class LocationService {
     }
 
     for (const office of enabledOffices) {
-      const { inGeofence } = checkInGeofence(location, [office]);
+      const { inGeofence, distance } = checkInGeofence(location, [office]);
       const wasInGeofence = this.lastGeofenceState.get(office.id) || false;
 
       if (inGeofence && !wasInGeofence) {
         // Entry detected - use dwell time to confirm
+        console.log(`🚪 Geofence ENTRY detected at "${office.name}" (distance: ${Math.round(distance || 0)}m)`);
+        console.log(`⏱️ Starting dwell timer...`);
         this.handleEntryWithDwell(office, location);
       } else if (!inGeofence && wasInGeofence) {
         // Exit detected - immediate
+        console.log(`🚪 Geofence EXIT detected at "${office.name}" (distance: ${Math.round(distance || 0)}m)`);
         this.lastGeofenceState.set(office.id, false);
         this.clearDwellTimer(office.id);
         this.notifyGeofenceListeners({
@@ -299,14 +302,17 @@ class LocationService {
     const settings = SettingsService.getSettings().then((s) => {
       const dwellTime = s.dwellTimeSeconds * 1000;
 
+      console.log(`⏱️ Dwell timer set for ${s.dwellTimeSeconds}s for "${office.name}"`);
+
       const timer = setTimeout(() => {
         // Double-check still in geofence
-        const { inGeofence } = checkInGeofence(
+        const { inGeofence, distance } = checkInGeofence(
           this.currentLocation || location,
           [office]
         );
 
         if (inGeofence) {
+          console.log(`✅ Dwell time completed for "${office.name}" - confirming entry (distance: ${Math.round(distance || 0)}m)`);
           this.lastGeofenceState.set(office.id, true);
           this.notifyGeofenceListeners({
             type: 'entry',
@@ -314,6 +320,8 @@ class LocationService {
             timestamp: Date.now(),
             currentPosition: this.currentLocation || location,
           });
+        } else {
+          console.log(`❌ Dwell time completed but no longer in geofence for "${office.name}" - cancelling entry`);
         }
       }, dwellTime);
 
